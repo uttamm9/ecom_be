@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const productImageModel = mongoose.Schema({
+const productImageModel = new mongoose.Schema({
     product_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'product',

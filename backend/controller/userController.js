@@ -43,11 +43,18 @@ exports.usersignup = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
+        if(role == 'supplier'){
+            const supplier = await supplierModule.findOne({email})
+            if(!supplier){
+                return res.status(404).json({message:"signup as a supplier"})
+            }
+        }
         const user = await userModule.findOne({email}); 
         if (!user) {
             return res.status(400).json({message: 'User not found'});
         }
+        console.log(user)
         const name = user.name;
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
@@ -55,7 +62,7 @@ exports.login = async (req, res) => {
         }
         const token = jwt.sign({_id: user._id},secretkey,{expiresIn: '1d'});
 
-        res.status(200).json({message:'User login Succesful',token,name});
+        res.status(200).json({message:'User login Succesful',token,name,role});
     }
     catch (err) {
         res.status(500).json({
