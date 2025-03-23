@@ -45,7 +45,8 @@ exports.login = async (req, res) => {
     try {
         const { email, password, role } = req.body;
         if(role == 'supplier'){
-            const supplier = await supplierModule.findOne({email})
+            const supplier = await supplierModule.findOne({businessEmail:email})
+            console.log("supplier",supplier)
             if(!supplier){
                 return res.status(404).json({message:"signup as a supplier"})
             }
@@ -54,7 +55,7 @@ exports.login = async (req, res) => {
         if (!user) {
             return res.status(400).json({message: 'User not found'});
         }
-        console.log(user)
+        console.log('user', user);
         const name = user.name;
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
@@ -89,6 +90,10 @@ exports.forgatePassword = async (req, res) => {
         const hashPassword = await bcrypt.hash(newPassword, salt);
         await userModule.updateOne({email}, {password: hashPassword});
         // Send token to user's email
+        const isSupplier = await supplierModule.findOne({businessEmail:email});
+        if(isSupplier){
+            await supplierModule.updateOne({businessEmail:email},{password:hashPassword})
+        }
         
         res.status(200).json({message: 'Password updated'});
     }
