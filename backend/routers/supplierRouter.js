@@ -4,4 +4,6 @@ const supplierController = require('../controller/supplierController');
 
 router.post('/supplierSignup',supplierController.supplierSignup);
 
+router.post('/addproduct',supplierController.productAdd)
+
 module.exports = router

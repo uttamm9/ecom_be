@@ -30,5 +30,17 @@ const productModel = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    brand: {
+        type: String,
+        required: false
+    },
+    rating: {
+        type: Number,
+        required: false
+    },
+    reviews: {
+        type: Number,
+        required: false
+    },
 },{versionKey:false,timestamps:true});
 module.exports = mongoose.model('product', productModel);

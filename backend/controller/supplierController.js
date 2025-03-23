@@ -43,9 +43,35 @@ exports.supplierSignup = async (req, res) => {
       });
       await createUser.save();
     }
-  
+    await SendMail(businessEmail, 'Supplier Registration', 'Supplier registered successfully');
     return res.status(201).json({message: 'Supplier registered successfully'});
 
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({message: 'Internal server error'});
+  }
+}
+
+exports.productAdd = async (req, res) => {
+  console.log('req.body', req.body);
+  console.log('req.files',req.files)
+  return;
+  try {
+    const {name,price,quantity,category,description,brand,images} = req.body;
+    if(!(name && price && quantity && category && description && brand && images)) {
+      return res.status(400).json({message: 'All fields are required'});
+    }
+    const newProduct = new productModel({
+      name,
+      price,
+      quantity,
+      category,
+      description,
+      brand,
+      images
+    });
+    await newProduct.save();
+    return res.status(201).json({message: 'Product added successfully'});
   } catch (error) {
     console.error(error);
     return res.status(500).json({message: 'Internal server error'});
