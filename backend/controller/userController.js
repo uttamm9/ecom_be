@@ -1,5 +1,7 @@
 const userModule = require('../model/userModel');
 const supplierModule = require('../model/supplierModel');
+const productImage = require('../model/productImage');
+const productModel = require('../model/productModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const secretkey = '32wrdc34ferc5tfvc4erfd3e4r';
@@ -152,6 +154,19 @@ exports.resetPassword = async (req, res) => {
         console.log('data',data);
 
         res.status(200).json({ message: 'Password updated'});
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Internal server error'
+        });
+    }
+}
+
+exports.allProducts = async (req, res) => {
+    try {
+        const products = await productImage.find().populate('product_id');
+        console.log('products', products);
+        res.status(200).json(products);
     }
     catch (err) {
         res.status(500).json({

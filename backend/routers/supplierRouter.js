@@ -7,4 +7,6 @@ router.post('/supplierSignup',supplierController.supplierSignup);
 
 router.post('/addproduct',supplierAuth,supplierController.productAdd)
 
+router.get('/getproducts',supplierAuth,supplierController.getProducts)
+
 module.exports = router

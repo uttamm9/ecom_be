@@ -80,12 +80,16 @@ exports.productAdd = async (req, res) => {
     console.log('product', newProduct);
     await newProduct.save();
     let uploadedFiles = [];
-    for(const file in req.files){
-      const result = await FileUpload(req.files[file]);
-      uploadedFiles.push(result.url);
+    const filesArray = Object.values(req.files);
+    for(files of filesArray){
+      const result = await FileUpload(files);
+      console.log('result', result);
+      result.forEach(file => {
+        uploadedFiles.push(file.url);
+      });
     }
     console.log('uploadedFiles', uploadedFiles);
-    return;
+   
     const newProductImage = new productImage({
       product_id: newProduct._id,
       imageUrl: uploadedFiles
@@ -97,5 +101,21 @@ exports.productAdd = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({message: 'Internal server error'});
+  }
+}
+
+exports.getProducts = async (req, res) => {
+  try {
+    if (!req.supplier || !req.supplier._id) {
+      return res.status(400).json({ message: 'Supplier ID is required' });
+    }
+    const products = await productModel.find({ supplier_id: req.supplier._id });
+    if (!products || products.length === 0) {
+      return res.status(404).json({ message: 'No products found' });
+    }
+    return res.status(200).json(products);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }
