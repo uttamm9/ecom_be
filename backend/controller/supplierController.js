@@ -1,9 +1,12 @@
 const supplierModel = require('../model/supplierModel');
+const productImage = require('../model/productImage');
+const productModel = require('../model/productModel');
 const userModel = require('../model/userModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const secretkey = '32wrdc34ferc5tfvc4erfd3e4r';
 const {SendMail} = require('C:/Users/uttam/OneDrive/Desktop/ENV/Nodemailer');
+const {FileUpload} = require('../Utility/ClodinaryService')
 
 exports.supplierSignup = async (req, res) => {
   // console.log(req.body);
@@ -54,11 +57,15 @@ exports.supplierSignup = async (req, res) => {
 
 exports.productAdd = async (req, res) => {
   console.log('req.body', req.body);
-  console.log('req.files',req.files)
-  return;
+  console.log('req.files', req.files);
+  console.log('req.supplier', req.supplier._id);
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: 'No files were uploaded' });
+  }
+
   try {
-    const {name,price,quantity,category,description,brand,images} = req.body;
-    if(!(name && price && quantity && category && description && brand && images)) {
+    const {name,price,quantity,category,description,brand} = req.body;
+    if(!(name && price && quantity && category && description && brand)) {
       return res.status(400).json({message: 'All fields are required'});
     }
     const newProduct = new productModel({
@@ -68,9 +75,24 @@ exports.productAdd = async (req, res) => {
       category,
       description,
       brand,
-      images
+      supplier_id: req.supplier._id
     });
+    console.log('product', newProduct);
     await newProduct.save();
+    let uploadedFiles = [];
+    for(const file in req.files){
+      const result = await FileUpload(req.files[file]);
+      uploadedFiles.push(result.url);
+    }
+    console.log('uploadedFiles', uploadedFiles);
+    return;
+    const newProductImage = new productImage({
+      product_id: newProduct._id,
+      imageUrl: uploadedFiles
+    });
+    await newProductImage.save();
+
+
     return res.status(201).json({message: 'Product added successfully'});
   } catch (error) {
     console.error(error);

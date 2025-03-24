@@ -6,9 +6,10 @@ const productImageModel = new mongoose.Schema({
         ref: 'product',
         required: true
     },
-    image: {
+    imageUrl: [{
         type: String,
         required: true
-    }
+    }]
 },{versionKey:false,timestamps:true});
+
 module.exports = mongoose.model('productImage', productImageModel);
