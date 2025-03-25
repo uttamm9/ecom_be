@@ -16,4 +16,6 @@ router.patch('/resetPassword', auth,userController.resetPassword);
 
 router.get('/getAllproduts', auth, userController.allProducts);
 
+router.get('/showSingleProdut/:id', auth, userController.singleProduct);
+
 module.exports = router;

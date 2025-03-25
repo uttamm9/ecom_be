@@ -46,26 +46,31 @@ exports.usersignup = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password, role } = req.body;
+        let username;
+      
+        const user = await userModule.findOne({email}); 
+        if (!user) {
+            return res.status(400).json({message: 'User not found'});
+        }
+        console.log('user', user);
+        username = user.name;
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            return res.status(400).json({ message: 'Invalid password'});
+        }
+
         if(role == 'supplier'){
             const supplier = await supplierModule.findOne({businessEmail:email})
             console.log("supplier",supplier)
             if(!supplier){
                 return res.status(404).json({message:"signup as a supplier"})
             }
+            username = supplier.businessName;
         }
-        const user = await userModule.findOne({email}); 
-        if (!user) {
-            return res.status(400).json({message: 'User not found'});
-        }
-        console.log('user', user);
-        const name = user.name;
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) {
-            return res.status(400).json({ message: 'Invalid password'});
-        }
+
         const token = jwt.sign({_id: user._id},secretkey,{expiresIn: '1d'});
 
-        res.status(200).json({message:'User login Succesful',token,name,role});
+        res.status(200).json({message:'User login Succesful',token,username,role});
     }
     catch (err) {
         res.status(500).json({
@@ -172,5 +177,25 @@ exports.allProducts = async (req, res) => {
         res.status(500).json({
             message: 'Internal server error'
         });
+    }
+}
+
+exports.singleProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log('id', id);
+        const product = await productImage.findOne({_id: id}).populate({
+            path: 'product_id',
+            populate: {
+            path: 'supplier_id',
+            model: 'supplier'
+            }
+        });
+       
+        console.log('product', product);
+        res.status(200).json(product);
+    }
+    catch (err) {
+        res.status(500).json({message: 'Internal server error'});
     }
 }
