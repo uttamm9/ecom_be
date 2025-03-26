@@ -9,4 +9,6 @@ router.post('/addproduct',supplierAuth,supplierController.productAdd)
 
 router.get('/getproducts',supplierAuth,supplierController.getProducts)
 
+router.patch('/editproduct/:id',supplierAuth,supplierController.editProduct)
+
 module.exports = router

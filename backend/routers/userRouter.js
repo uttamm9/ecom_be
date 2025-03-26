@@ -18,4 +18,10 @@ router.get('/getAllproduts', auth, userController.allProducts);
 
 router.get('/showSingleProdut/:id', auth, userController.singleProduct);
 
+// router.post('/addTowishlist', auth, userController.addToWishlist);
+
+router.post('/addtocart',auth,userController.addToCart);
+
+router.get('/getCartItems',auth,userController.getCartItems);
+
 module.exports = router;

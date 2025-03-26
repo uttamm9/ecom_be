@@ -2,6 +2,7 @@ const userModule = require('../model/userModel');
 const supplierModule = require('../model/supplierModel');
 const productImage = require('../model/productImage');
 const productModel = require('../model/productModel');
+const cartModel = require('../model/addToCart');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const secretkey = '32wrdc34ferc5tfvc4erfd3e4r';
@@ -194,6 +195,84 @@ exports.singleProduct = async (req, res) => {
        
         console.log('product', product);
         res.status(200).json(product);
+    }
+    catch (err) {
+        res.status(500).json({message: 'Internal server error'});
+    }
+}
+
+exports.addToCart = async (req, res) => {
+    try {
+        const { product_id } = req.body;
+        const user_id = req.user._id;
+        console.log('user_id', user_id);
+        const product = await productModel.findOne({_id: product_id});
+        if (!product) {
+            return res.status(404).json({message: 'Product not found'});
+        }
+        const cartData = new cartModel({
+            userId: user_id,
+            productId: product_id,
+            });
+
+        console.log('data', cartData);
+        await cartData.save();
+        res.status(200).json({message: 'Product added to cart'});
+    }
+    catch (err) {
+        res.status(500).json({message: 'Internal server error'});
+    }
+}
+
+exports.getCartItems = async (req, res) => {
+    try {
+        const user_id = req.user._id;
+
+        const cartItems = await cartModel.aggregate([
+            { $match: { userId: user_id } }, // Filter by user ID
+            {
+                $lookup: {
+                    from: 'products', // Ensure this matches the correct collection name
+                    localField: 'productId',
+                    foreignField: '_id',
+                    as: 'productDetails'
+                }
+            },
+            { $unwind: { path: '$productDetails', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'productimages', // Ensure this matches the correct MongoDB collection name
+                    localField: 'productId',
+                    foreignField: 'product_id',
+                    as: 'productImages'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    userId: 1,
+                    productId: 1,
+                    quantity: 1,
+                    createdAt: 1,
+                    "productDetails.name": 1,
+                    "productDetails.price": 1,
+                    "productDetails.quantity": 1,
+                    "productDetails.category": 1,
+                    "productDetails.supplier_id": 1,
+                    "productDetails.description": 1,
+                    "productDetails.isAvailable": 1,
+                    "productDetails.brand": 1,
+                    "productDetails.rating": 1,
+                    "productDetails.reviews": 1,
+                    productImages: { $arrayElemAt: ["$productImages.imageUrl", 0] } // Get the first image only
+                }
+            }
+        ]);
+        
+        console.log(cartItems);
+        
+        console.log('cartItems', cartItems);
+        res.status(200).json(cartItems);
     }
     catch (err) {
         res.status(500).json({message: 'Internal server error'});
