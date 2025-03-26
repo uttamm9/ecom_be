@@ -2,6 +2,8 @@ const userModule = require('../model/userModel');
 const supplierModule = require('../model/supplierModel');
 const productImage = require('../model/productImage');
 const productModel = require('../model/productModel');
+const wishlistModel = require('../model/wishlist');
+const addressModel = require('../model/userAddres')
 const cartModel = require('../model/addToCart');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -9,6 +11,7 @@ const secretkey = '32wrdc34ferc5tfvc4erfd3e4r';
 const {SendMail} = require('C:/Users/uttam/OneDrive/Desktop/ENV/Nodemailer');
 const {FileUpload} = require('../Utility/ClodinaryService')
 const moment = require('moment');
+const e = require('express');
 
 exports.usersignup = async (req, res) => {
     try {
@@ -276,5 +279,166 @@ exports.getCartItems = async (req, res) => {
     }
     catch (err) {
         res.status(500).json({message: 'Internal server error'});
+    }
+}
+
+exports.addToWishlist = async (req, res) => {
+    console.log('req.body', req.body);
+    try {
+        const { product_id ,wishlist} = req.body;
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({message: 'Login required'});
+        }
+        const user_id = req.user._id;
+        console.log('user_id', user_id);
+        if(wishlist){
+            const wishlistData = new wishlistModel({
+                user_id: user_id,
+                product_id: product_id,
+                });
+    
+            console.log('data', wishlistData);
+            await wishlistData.save();
+            res.status(200).json({message: 'Product added to wishlist'});
+        }else{
+            await wishlistModel.deleteOne({user_id:user_id,product_id:product_id})
+            res.status(200).json({message: 'Product removed from wishlist'});
+        }
+    }
+    catch (err) {
+        res.status(500).json({message: 'Internal server error'});
+    }
+}
+
+exports.getwishlistdata = async (req, res) => {
+    console.log('req.user', req.user);
+
+    try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: 'Login required' });
+        }
+
+        const wishlistData = await wishlistModel.aggregate([
+            { $match: { user_id: req.user._id } }, // Filter by user ID
+            {
+                $lookup: {
+                    from: 'products', // Collection name in MongoDB
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'productDetails'
+                }
+            },
+            { $unwind: "$productDetails" }, // Flatten the productDetails array
+            {
+                $lookup: {
+                    from: 'productimages', // Collection name in MongoDB
+                    localField: 'product_id',
+                    foreignField: 'product_id',
+                    as: 'productImages'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    user_id: 1,
+                    "productDetails.name": 1,
+                    "productDetails.price": 1,
+                    "productDetails.category": 1,
+                    "productDetails._id": 1,
+                    productImages: { $arrayElemAt: ["$productImages.imageUrl", 0] } // Get first image
+                }
+            }
+        ]);
+
+        if (!wishlistData.length) {
+            return res.status(404).json({ message: 'No items in wishlist' });
+        }
+
+        console.log('wishlistdata', wishlistData);
+        res.status(200).json(wishlistData);
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+exports.removewishlist = async (req, res) => {
+    try {
+        const { _id } = req.params;
+       
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: 'Login required' });
+        }
+
+        const wishlistItem = await wishlistModel.findOne({ user_id: req.user._id, product_id:_id });
+        console.log('wishlist',wishlistItem)
+        if (!wishlistItem) {
+            return res.status(404).json({ message: 'Item not found in wishlist' });
+        }
+        await wishlistModel.findByIdAndDelete({_id:wishlistItem._id})
+        res.status(200).json({ message: 'Product removed from wishlist' });
+    } catch (err) {
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+exports.addAddress = async (req, res) => {
+    try {
+        const { apartmentName, city, landmark, pinCode, receiverName, receiverPhone } = req.body;
+
+        if (!(apartmentName && city && landmark && pinCode && receiverName && receiverPhone)) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        const newAddress = new addressModel({
+            apartmentName,
+            city,
+            landmark,
+            pinCode,
+            receiverName,
+            receiverPhone,
+            userId: req.user._id
+        });
+
+        await newAddress.save();
+        res.status(201).json({ message: 'Address added successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+exports.getaddress = async (req, res) => {
+    try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: 'Login required' });
+        }
+
+        const addresses = await addressModel.find({ userId: req.user._id });
+        if (!addresses.length) {
+            return res.status(404).json({ message: 'No addresses found' });
+        }
+
+        res.status(200).json(addresses);
+    } catch (err) {
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+exports.deleteaddress = async (req, res) => {
+    try {
+        const { _id } = req.params;
+        
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: 'Login required' });
+        }
+
+        const address = await addressModel.findOne({ _id: _id, userId: req.user._id });
+        if (!address) {
+            return res.status(404).json({ message: 'Address not found' });
+        }
+
+        await addressModel.deleteOne({ _id: _id, userId: req.user._id });
+        res.status(200).json({ message: 'Address deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Internal server error' });
     }
 }

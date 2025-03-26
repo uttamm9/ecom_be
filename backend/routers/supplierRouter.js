@@ -11,4 +11,6 @@ router.get('/getproducts',supplierAuth,supplierController.getProducts)
 
 router.patch('/editproduct/:id',supplierAuth,supplierController.editProduct)
 
+router.delete('/deleteproduct/:id',supplierAuth,supplierController.deleteProduct)
+
 module.exports = router
