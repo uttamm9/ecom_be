@@ -24,6 +24,8 @@ router.post('/addtocart',auth,userController.addToCart);
 
 router.get('/getCartItems',auth,userController.getCartItems);
 
+router.delete('/deletecartitem/:id',auth,userController.deletecartItem)
+
 router.get('/wishlistdata',auth,userController.getwishlistdata)
 
 router.delete('/removewishlist/:_id',auth,userController.removewishlist)
@@ -33,6 +35,12 @@ router.post('/address',auth,userController.addAddress)
 router.get('/getaddress',auth,userController.getaddress)
 
 router.delete('/deleteaddress/:_id',auth,userController.deleteaddress)
+
+router.patch('/increseitem',auth,userController.increseitem)
+
+router.patch('/decreseitem',auth,userController.decreseitem)
+
+router.post('/placeorder',auth,userController.placeorder)
 
 
 module.exports = router;

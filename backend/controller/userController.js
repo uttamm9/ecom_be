@@ -4,6 +4,7 @@ const productImage = require('../model/productImage');
 const productModel = require('../model/productModel');
 const wishlistModel = require('../model/wishlist');
 const addressModel = require('../model/userAddres')
+const orderModel = require('../model/orderModel')
 const cartModel = require('../model/addToCart');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -11,7 +12,7 @@ const secretkey = '32wrdc34ferc5tfvc4erfd3e4r';
 const {SendMail} = require('C:/Users/uttam/OneDrive/Desktop/ENV/Nodemailer');
 const {FileUpload} = require('../Utility/ClodinaryService')
 const moment = require('moment');
-const e = require('express');
+
 
 exports.usersignup = async (req, res) => {
     try {
@@ -272,15 +273,36 @@ exports.getCartItems = async (req, res) => {
             }
         ]);
         
-        console.log(cartItems);
+        // console.log(cartItems);
         
-        console.log('cartItems', cartItems);
+        // console.log('cartItems', cartItems);
         res.status(200).json(cartItems);
     }
     catch (err) {
         res.status(500).json({message: 'Internal server error'});
     }
 }
+
+exports.deletecartItem = async (req, res) => {
+    console.log(req.params);
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        const cartItem = await cartModel.findOne({ _id: id, userId: req.user._id });
+        if (!cartItem) {
+            return res.status(404).json({ message: 'Item not found in cart' });
+        }
+
+        await cartModel.findByIdAndDelete({ _id: id });
+        res.status(200).json({ message: 'Product removed from cart' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 exports.addToWishlist = async (req, res) => {
     console.log('req.body', req.body);
@@ -354,7 +376,7 @@ exports.getwishlistdata = async (req, res) => {
             return res.status(404).json({ message: 'No items in wishlist' });
         }
 
-        console.log('wishlistdata', wishlistData);
+        // console.log('wishlistdata', wishlistData);
         res.status(200).json(wishlistData);
     } catch (error) {
         res.status(500).json({ message: 'Internal server error' });
@@ -370,7 +392,7 @@ exports.removewishlist = async (req, res) => {
         }
 
         const wishlistItem = await wishlistModel.findOne({ user_id: req.user._id, product_id:_id });
-        console.log('wishlist',wishlistItem)
+        // console.log('wishlist',wishlistItem)
         if (!wishlistItem) {
             return res.status(404).json({ message: 'Item not found in wishlist' });
         }
@@ -440,5 +462,75 @@ exports.deleteaddress = async (req, res) => {
         res.status(200).json({ message: 'Address deleted successfully' });
     } catch (err) {
         res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+exports.increseitem = async(req,res)=>{
+    // console.log(req.body)
+    const{id}= req.body
+    console.log(id)
+    try {
+        if (!id) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        const cartItem = await cartModel.findOne({ _id: id, userId: req.user._id });
+        if (!cartItem) {
+            return res.status(404).json({ message: 'Item not found in cart' });
+        }
+
+        cartItem.quantity = (cartItem.quantity || 0) + 1;
+        await cartItem.save();
+
+        res.status(200).json({ message: 'Quantity increased by 1', cartItem });
+
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error' })
+    }
+    
+}
+
+exports.decreseitem = async(req,res)=>{
+console.log(req.body)
+const {id} = req.body
+try {
+    if (!id) {
+        return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const cartItem = await cartModel.findOne({ _id: id, userId: req.user._id });
+    if (!cartItem) {
+        return res.status(404).json({ message: 'Item not found in cart' });
+    }
+
+    cartItem.quantity = (cartItem.quantity || 0) - 1;
+    await cartItem.save();
+
+    res.status(200).json({ message: 'Quantity increased by 1'});
+} catch (error) {
+    return res.status(500).json({ message: 'Internal server error' })
+}
+}
+
+exports.placeorder = async(req,res)=>{
+    const {selectedAddress,paymentMode} = req.body
+    console.log(selectedAddress,paymentMode)
+    try {
+        const cartid = await cartModel.find({userId:req.user._id})
+        
+        for(cart of cartid){
+            const orderdetails = new orderModel({
+                cartid:cart._id,
+                address:selectedAddress,
+                userid: req.user._id,
+                paymentmode: paymentMode       
+            })
+            await orderdetails.save()
+        }
+
+        res.status(200).json({message:'order placed'})
+        
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error' })
     }
 }
