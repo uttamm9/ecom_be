@@ -13,6 +13,10 @@ const cartSchema = new Schema({
         type: Number,
         default: 1
     },
+    status:{
+        type:String,
+        default:'pending'
+    },
     createdAt: {
         type: Date,
         default: Date.now

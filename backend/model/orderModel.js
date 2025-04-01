@@ -23,6 +23,10 @@ const orderDetails = new mongoose.Schema({
   paymentmode:{
     type:String,
     default:'COD'
+  },
+  deliveriDate:{
+    type:Date,
+    
   }
 })
 

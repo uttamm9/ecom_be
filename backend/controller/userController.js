@@ -5,6 +5,7 @@ const productModel = require('../model/productModel');
 const wishlistModel = require('../model/wishlist');
 const addressModel = require('../model/userAddres')
 const orderModel = require('../model/orderModel')
+const supplierOrderModel = require('../model/supplierOrder')
 const cartModel = require('../model/addToCart');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -175,7 +176,7 @@ exports.resetPassword = async (req, res) => {
 exports.allProducts = async (req, res) => {
     try {
         const products = await productImage.find().populate('product_id');
-        console.log('products', products);
+        // console.log('products', products);
         res.status(200).json(products);
     }
     catch (err) {
@@ -197,7 +198,7 @@ exports.singleProduct = async (req, res) => {
             }
         });
        
-        console.log('product', product);
+        // console.log('product', product);
         res.status(200).json(product);
     }
     catch (err) {
@@ -233,7 +234,7 @@ exports.getCartItems = async (req, res) => {
         const user_id = req.user._id;
 
         const cartItems = await cartModel.aggregate([
-            { $match: { userId: user_id } }, // Filter by user ID
+            { $match: { userId: user_id, status: 'pending' } }, // Filter by user ID
             {
                 $lookup: {
                     from: 'products', // Ensure this matches the correct collection name
@@ -516,16 +517,25 @@ exports.placeorder = async(req,res)=>{
     const {selectedAddress,paymentMode} = req.body
     console.log(selectedAddress,paymentMode)
     try {
-        const cartid = await cartModel.find({userId:req.user._id})
+        const cartid = await cartModel.find({userId:req.user._id},{status:'pending'})
         
         for(cart of cartid){
-            const orderdetails = new orderModel({
-                cartid:cart._id,
-                address:selectedAddress,
-                userid: req.user._id,
-                paymentmode: paymentMode       
-            })
-            await orderdetails.save()
+           await cartModel.findByIdAndUpdate(cart._id, { status: 'complete' });
+           const randomDeliveryDate = new Date();
+           randomDeliveryDate.setDate(randomDeliveryDate.getDate() + Math.floor(Math.random() * 10) + 1);
+
+           const orderDetails = await orderModel({
+            cartid: cart._id,
+            address: selectedAddress,
+            userid: req.user._id,
+            paymentmode: paymentMode,
+            deliveriDate: randomDeliveryDate
+           });
+           await orderDetails.save()
+        //    await supplierModule({
+        //     quantity:cart.quantity,
+        //     supplierId:
+        //    })
         }
 
         res.status(200).json({message:'order placed'})
