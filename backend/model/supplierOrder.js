@@ -41,4 +41,4 @@ const supplierOrderSchema = new mongoose.Schema({
 }, { timestamps: true, versionKey:false}
 );
 
-module.exports = mongoose.model('supplierOrder', supplierOrderSchema);
+module.exports = mongoose.model('supplierorder', supplierOrderSchema);

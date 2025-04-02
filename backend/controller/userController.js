@@ -517,25 +517,38 @@ exports.placeorder = async(req,res)=>{
     const {selectedAddress,paymentMode} = req.body
     console.log(selectedAddress,paymentMode)
     try {
-        const cartid = await cartModel.find({userId:req.user._id},{status:'pending'})
+        const cartid = await cartModel.find({ userId: req.user._id, status: 'pending' });
+        console.log('cart>>',cartid)
         
-        for(cart of cartid){
-           await cartModel.findByIdAndUpdate(cart._id, { status: 'complete' });
-           const randomDeliveryDate = new Date();
-           randomDeliveryDate.setDate(randomDeliveryDate.getDate() + Math.floor(Math.random() * 10) + 1);
-
-           const orderDetails = await orderModel({
+        for (const cart of cartid) {
+            await cartModel.findByIdAndUpdate(cart._id, { status: 'complete' });
+            const randomDeliveryDate = new Date();
+            randomDeliveryDate.setDate(randomDeliveryDate.getDate() + Math.floor(Math.random() * 10) + 1);
+            console.log('single vart details>>',cart)
+            const orderDetails = new orderModel({
             cartid: cart._id,
             address: selectedAddress,
             userid: req.user._id,
             paymentmode: paymentMode,
-            deliveriDate: randomDeliveryDate
-           });
-           await orderDetails.save()
-        //    await supplierModule({
-        //     quantity:cart.quantity,
-        //     supplierId:
-        //    })
+            deliveryDate: randomDeliveryDate
+            });
+            await orderDetails.save();
+
+            const product = await productModel.findById({_id: cart.productId});
+            console.log('product>>', product);
+            if (product) {
+                const supplierOrder = new supplierOrderModel({
+                    quantity: cart.quantity,
+                    supplierId: product.supplier_id,
+                    userId: req.user._id,
+                    productId: cart.productId,
+                    addressId: selectedAddress,
+                    paymentMode: paymentMode,
+                    orderId: orderDetails._id
+                });
+                console.log('supplier order data>>', supplierOrder);
+                await supplierOrder.save();
+            }
         }
 
         res.status(200).json({message:'order placed'})
@@ -544,3 +557,73 @@ exports.placeorder = async(req,res)=>{
         return res.status(500).json({ message: 'Internal server error' })
     }
 }
+
+exports.getmyorders = async (req, res) => {
+    try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: 'Login required' });
+        }
+
+        const { _id } = req.user;
+        console.log(_id);
+
+        // Fetch all orders placed by the user
+        const orderedProduct = await supplierOrderModel.aggregate([
+            { $match: { userId: _id } }, // Match the orders for the specific user
+            {
+                $lookup: {
+                    from: 'products', // Collection name for products
+                    localField: 'productId',
+                    foreignField: '_id',
+                    as: 'productDetails'
+                }
+            },
+            { $unwind: "$productDetails" }, // Flatten the productDetails array
+            {
+                $lookup: {
+                    from: 'productimages', // Collection name for product images
+                    localField: 'productDetails._id', // Match product ID
+                    foreignField: 'product_id', // Match in productImage collection
+                    as: 'productImages'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'addresses', // Collection name for addresses
+                    localField: 'addressId',
+                    foreignField: '_id',
+                    as: 'addressDetails'
+                }
+            },
+            { $unwind: "$addressDetails" }, // Flatten address details
+            {
+                $project: {
+                    _id: 1,
+                    userId: 1,
+                    quantity: 1,
+                    status: 1,
+                    paymentMode: 1,
+                    "productDetails.name": 1,
+                    "productDetails.price": 1,
+                    "productDetails.category": 1,
+                    productImages: "$productImages.imageUrl", // Extract images array
+                    "addressDetails.city": 1,
+                    "addressDetails.street": 1
+                }
+            }
+        ]);
+        
+        console.log(orderedProduct);
+    
+
+        if (!orderedProduct.length) {
+            return res.status(404).json({ message: 'No orders found' });
+        }
+
+        console.log('my ordered product>>', orderedProduct);
+        res.status(200).json(orderedProduct);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};

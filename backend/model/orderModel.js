@@ -28,6 +28,6 @@ const orderDetails = new mongoose.Schema({
     type:Date,
     
   }
-})
+},{versionKey:false,timestamps:true})
 
 module.exports = mongoose.model('order',orderDetails);

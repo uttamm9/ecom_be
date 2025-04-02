@@ -42,5 +42,7 @@ router.patch('/decreseitem',auth,userController.decreseitem)
 
 router.post('/placeorder',auth,userController.placeorder)
 
+router.get('/myorders',auth,userController.getmyorders)
+
 
 module.exports = router;
