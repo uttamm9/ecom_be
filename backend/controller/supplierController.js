@@ -2,11 +2,13 @@ const supplierModel = require('../model/supplierModel');
 const productImage = require('../model/productImage');
 const productModel = require('../model/productModel');
 const userModel = require('../model/userModel');
+const supplierOrders = require('../model/supplierOrder');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const secretkey = '32wrdc34ferc5tfvc4erfd3e4r';
 const {SendMail} = require('C:/Users/uttam/OneDrive/Desktop/ENV/Nodemailer');
-const {FileUpload} = require('../Utility/ClodinaryService')
+const {FileUpload} = require('../Utility/ClodinaryService');
+
 
 exports.supplierSignup = async (req, res) => {
   // console.log(req.body);
@@ -150,6 +152,23 @@ exports.deleteProduct = async (req, res) => {
     await productModel.deleteOne({ _id: id });
     await productImage.deleteMany({ product_id: id });
     return res.status(200).json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+exports.getOrders = async (req, res) => {
+  console.log('req.supplier', req.supplier._id);
+  if (!req.supplier || !req.supplier._id) {
+    return res.status(400).json({ message: 'Supplier ID is required' });
+  }
+  try {
+    const orders = await supplierOrders.find({ supplierId: req.supplier._id }).populate('productId')
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: 'No orders found' });
+    }
+    return res.status(200).json(orders);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Internal server error' });
