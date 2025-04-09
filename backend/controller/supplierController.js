@@ -174,3 +174,31 @@ exports.getOrders = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
+
+exports.orderAction = async (req,res)=>{
+  console.log('req.body', req.body);
+  console.log('req.supplier', req.supplier._id);
+  try {
+    const { _id, status } = req.body;
+
+    if (!_id) {
+      return res.status(400).json({ message: 'Order ID is required' });
+    }
+    const order = await supplierOrders.findOne({ _id});
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    console.log("oder>>>",order)
+    if(status == 'cancel'){
+      await supplierOrders.findByIdAndUpdate({_id}, { status: status })
+    }
+    if(status == 'packege'){
+      await supplierOrders.findByIdAndUpdate({_id}, { status: status })
+    }
+    return res.status(200).json({ message: `Order ${status} successfully` });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+
+}
