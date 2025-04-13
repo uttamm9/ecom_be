@@ -4,11 +4,9 @@ const productModel = require('../model/productModel');
 const userModel = require('../model/userModel');
 const supplierOrders = require('../model/supplierOrder');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const secretkey = '32wrdc34ferc5tfvc4erfd3e4r';
 const {SendMail} = require('C:/Users/uttam/OneDrive/Desktop/ENV/Nodemailer');
 const {FileUpload} = require('../Utility/ClodinaryService');
-
+const inventoryModel = require('../model/inventoryModel');
 
 exports.supplierSignup = async (req, res) => {
   // console.log(req.body);
@@ -81,6 +79,12 @@ exports.productAdd = async (req, res) => {
     });
     console.log('product', newProduct);
     await newProduct.save();
+    await new inventoryModel({
+      productId: newProduct._id,
+      quantity: quantity,
+      supplierId: req.supplier._id
+    }).save();
+    
     let uploadedFiles = [];
     const filesArray = Object.values(req.files);
     for(files of filesArray){
@@ -98,6 +102,7 @@ exports.productAdd = async (req, res) => {
     });
     await newProductImage.save();
 
+  
 
     return res.status(201).json({message: 'Product added successfully'});
   } catch (error) {
