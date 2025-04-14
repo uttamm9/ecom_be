@@ -196,8 +196,16 @@ exports.orderAction = async (req,res)=>{
     console.log("oder>>>",order)
     if(status == 'cancel'){
       await supplierOrders.findByIdAndUpdate({_id}, { status: status })
+      const product = await productModel.findById({_id: order.productId});
+      const inventory = await inventoryModel.findOne({productId: order.productId, supplierId: req.supplier._id});
+      if(inventory){
+        await inventoryModel.findByIdAndUpdate({_id: inventory._id}, { quantity: inventory.quantity + order.quantity })
     }
+  }
     if(status == 'packege'){
+      await supplierOrders.findByIdAndUpdate({_id}, { status: status })
+    }
+    if(status=='deliver'){
       await supplierOrders.findByIdAndUpdate({_id}, { status: status })
     }
     return res.status(200).json({ message: `Order ${status} successfully` });

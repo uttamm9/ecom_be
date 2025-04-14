@@ -13,6 +13,7 @@ const secretkey = '32wrdc34ferc5tfvc4erfd3e4r';
 const {SendMail} = require('C:/Users/uttam/OneDrive/Desktop/ENV/Nodemailer');
 const {FileUpload} = require('../Utility/ClodinaryService')
 const moment = require('moment');
+const inventoryModel = require('../model/inventoryModel');
 
 
 exports.usersignup = async (req, res) => {
@@ -481,6 +482,14 @@ exports.increseitem = async(req,res)=>{
         }
 
         cartItem.quantity = (cartItem.quantity || 0) + 1;
+        const product = await productModel.findOne({ _id: cartItem.productId });
+        const inventoryStock = await inventoryModel.findOne({ productId: cartItem.productId, supplierId: product.supplier_id });
+        if (!inventoryStock) {
+            return res.status(404).json({ message: 'Inventory stock not found' });
+        }
+        if (cartItem.quantity > inventoryStock.quantity) {
+            return res.status(400).json({ message: 'Quantity exceeds available stock' });
+        }
         await cartItem.save();
 
         res.status(200).json({ message: 'Quantity increased by 1', cartItem });
@@ -521,6 +530,18 @@ exports.placeorder = async(req,res)=>{
         console.log('cart>>',cartid)
         
         for (const cart of cartid) {
+            console.log('cart>>>>>>',cart)
+            const inventoryStock = await inventoryModel.findOne({ productId: cart.productId });
+            if (!inventoryStock) {
+                return res.status(404).json({ message: 'Inventory stock not found' });
+            }
+            if (cart.quantity >= inventoryStock.quantity) {
+                return res.status(400).json({ message: 'Quantity exceeds available stock' });
+            }
+            inventoryStock.quantity -= cart.quantity;
+            await inventoryStock.save();
+            console.log('inventoryStock',inventoryStock)
+
             await cartModel.findByIdAndUpdate(cart._id, { status: 'complete' });
             const randomDeliveryDate = new Date();
             randomDeliveryDate.setDate(randomDeliveryDate.getDate() + Math.floor(Math.random() * 10) + 1);
