@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const inventorySchema = new mongoose.Schema({
   productId : {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
+    ref: 'product',
     required: true
   },
   quantity: {
@@ -12,7 +12,7 @@ const inventorySchema = new mongoose.Schema({
   },
   supplierId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Supplier',
+    ref: 'supplier',
     required: true
   },
 }, {versionKey: false,

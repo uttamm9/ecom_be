@@ -215,3 +215,47 @@ exports.orderAction = async (req,res)=>{
   }
 
 }
+
+exports.getInventory = async (req, res) => {
+  console.log('req.supplier', req.supplier._id);
+  try {
+    const inventories = await inventoryModel.find({ supplierId: req.supplier._id }).populate('productId');
+    if (!inventories || inventories.length === 0) {
+      return res.status(404).json({ message: 'No inventory found' });
+    }
+    return res.status(200).json(inventories);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+exports.addstock = async (req, res) => {
+  console.log('req.body', req.body);
+  console.log('req.supplier', req.supplier._id);
+  try {
+    const { product_id, quantity } = req.body;
+    if (!(product_id && quantity)) {
+      return res.status(400).json({ message: 'Product ID and quantity are required' });
+    }
+    const product = await productModel.findOne({ _id: product_id, supplier_id: req.supplier._id });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    const inventory = await inventoryModel.findOne({ productId: product_id, supplierId: req.supplier._id });
+    if (inventory) {
+      await inventoryModel.updateOne({ _id: inventory._id }, { $inc: { quantity: quantity } });
+    } else {
+      await new inventoryModel({
+        productId: product_id,
+        quantity: quantity,
+        supplierId: req.supplier._id
+      }).save();
+    }
+    return res.status(200).json({ message: 'Stock added successfully' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+
+}

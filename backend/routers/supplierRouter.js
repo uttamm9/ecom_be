@@ -17,4 +17,8 @@ router.get('/getorders',supplierAuth,supplierController.getOrders)
 
 router.patch('/orderAction',supplierAuth,supplierController.orderAction)
 
+router.patch('/addstock',supplierAuth,supplierController.addstock)
+
+router.get('/getinvertory',supplierAuth,supplierController.getInventory)
+
 module.exports = router
