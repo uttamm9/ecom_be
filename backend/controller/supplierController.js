@@ -116,7 +116,7 @@ exports.getProducts = async (req, res) => {
     if (!req.supplier || !req.supplier._id) {
       return res.status(400).json({ message: 'Supplier ID is required' });
     }
-    const products = await productModel.find({ supplier_id: req.supplier._id });
+    const products = await inventoryModel.find({ supplierId: req.supplier._id }).populate('productId');
     if (!products || products.length === 0) {
       return res.status(404).json({ message: 'No products found' });
     }
@@ -154,8 +154,7 @@ exports.deleteProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    await productModel.deleteOne({ _id: id });
-    await productImage.deleteMany({ product_id: id });
+    await productModel.findByIdAndUpdate({_id:id}, {isDeleted: true});
     return res.status(200).json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error(error);
@@ -207,6 +206,17 @@ exports.orderAction = async (req,res)=>{
     }
     if(status=='deliver'){
       await supplierOrders.findByIdAndUpdate({_id}, { status: status })
+    }
+    if(status=='return'){
+      await supplierOrders.findByIdAndUpdate({_id}, { status: status })
+    }
+    if(status=='returned'){
+      await supplierOrders.findByIdAndUpdate({_id}, { status: status })
+      const product = await productModel.findById({_id: order.productId});
+      const inventory = await inventoryModel.findOne({productId: order.productId, supplierId: req.supplier._id});
+      if(inventory){
+        await inventoryModel.findByIdAndUpdate({_id: inventory._id}, { quantity: inventory.quantity - order.quantity })
+    }
     }
     return res.status(200).json({ message: `Order ${status} successfully` });
   } catch (error) {

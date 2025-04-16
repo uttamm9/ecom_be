@@ -604,7 +604,15 @@ exports.getmyorders = async (req, res) => {
                     as: 'productDetails'
                 }
             },
-            { $unwind: "$productDetails" }, // Flatten the productDetails array
+            { $unwind: "$productDetails" },
+            {
+                $lookup: {
+                  from: 'orders',
+                  localField: 'orderId',
+                  foreignField: '_id',
+                  as: 'orderDetails'
+                }
+              }, // Flatten the orderDetails array
             {
                 $lookup: {
                     from: 'productimages', // Collection name for product images
@@ -629,9 +637,11 @@ exports.getmyorders = async (req, res) => {
                     quantity: 1,
                     status: 1,
                     paymentMode: 1,
+                    deliveriDate: 1,
                     "productDetails.name": 1,
                     "productDetails.price": 1,
                     "productDetails.category": 1,
+                    "orderDetails.deliveriDate": 1,
                     productImages: "$productImages.imageUrl", // Extract images array
                     "addressDetails.city": 1,
                     "addressDetails.street": 1
