@@ -5,6 +5,7 @@ const cors = require('cors');
 require('dotenv').config();
 const userRouter = require('./routers/userRouter');
 const supplierRouter = require('./routers/supplierRouter');
+const addminRouter = require('./routers/adminRouter')
 const fileupload = require('express-fileupload');
 app.use(fileupload());
 
@@ -25,6 +26,7 @@ mongoose.connect(mongo_url)
 
 app.use('/user',userRouter);
 app.use('/supplier',supplierRouter);
+app.use('/admin',addminRouter)
 
 app.listen(port,()=>{
     console.log(`Server is running on port ${port}`);
