@@ -221,6 +221,23 @@ exports.addToCart = async (req, res) => {
         if (!product) {
             return res.status(404).json({message: 'Product not found'});
         }
+        const existsingCartItem = await cartModel.findOne({ userId: user_id, productId: product_id, status: 'pending' });
+        console.log('existsingCartItem', existsingCartItem);
+        if (existsingCartItem) {
+            // If the item already exists in the cart, increment the quantity
+            existsingCartItem.quantity = (existsingCartItem.quantity || 0) + 1;
+            const inventoryStock = await inventoryModel.findOne({ productId: product_id, supplierId: product.supplier_id });
+            console.log('inventoryStock', inventoryStock);
+            if (!inventoryStock) {
+                return res.status(404).json({ message: 'Inventory stock not found' });
+            }
+            if (existsingCartItem.quantity > inventoryStock.quantity) {
+                return res.status(400).json({ message: 'Quantity exceeds available stock' });
+            }
+            await existsingCartItem.save();
+            return res.status(200).json({message: 'Product quantity updated in cart'}); 
+        }
+
         const cartData = new cartModel({
             userId: user_id,
             productId: product_id,
